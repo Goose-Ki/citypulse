@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CityPulse — Администратор</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-logo">City<span>Pulse</span> <span class="badge badge-admin" style="font-size:10px;margin-left:8px;">Admin</span></a>
+  <ul class="navbar-links">
+    <li><a href="index.html">Афиша</a></li>
+    <li><a href="admin.html" class="active">Панель</a></li>
+  </ul>
+  <div class="nav-user" id="nav-user" style="display:none">
+    <span class="nav-username"></span>
+    <button class="btn btn-ghost" id="btn-logout">Выйти</button>
+  </div>
+</nav>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <a href="#" class="active" data-tab="events">🗓 События</a>
+    <a href="#" data-tab="users">👥 Пользователи</a>
+  </aside>
+  <div class="admin-content">
+
+    <div id="tab-events">
+      <div class="admin-header">
+        <h2>События</h2>
+        <button class="btn btn-primary" id="btn-add-event">+ Добавить событие</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" id="stat-total">—</div><div class="stat-label">Всего событий</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-upcoming">—</div><div class="stat-label">Предстоящих</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-users">—</div><div class="stat-label">Пользователей</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Название</th><th>Город</th><th>Дата</th><th>Категория</th><th>Цена</th><th>Участники</th></tr></thead>
+          <tbody id="events-tbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text2)">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-users" style="display:none">
+      <div class="admin-header">
+        <h2>Пользователи</h2>
+        <button class="btn btn-primary" id="btn-add-user">+ Добавить</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Имя</th><th>Email</th><th>Возраст</th><th>Роль</th><th>Дата</th></tr></thead>
+          <tbody id="users-tbody"><tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text2)">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Модалка: событие -->
+<div class="modal-overlay" id="modal-event" style="display:none">
+  <div class="modal">
+    <h2>Новое событие</h2>
+    <div class="form-group"><label>Название *</label><input type="text" id="ev-title" /></div>
+    <div class="form-group"><label>Город *</label><input type="text" id="ev-city" /></div>
+    <div class="form-group"><label>Место</label><input type="text" id="ev-location" /></div>
+    <div class="form-group"><label>Дата и время *</label><input type="datetime-local" id="ev-date" /></div>
+    <div class="form-group">
+      <label>Категория</label>
+      <select id="ev-category">
+        <option value="concert">🎵 Концерт</option>
+        <option value="exhibition">🖼 Выставка</option>
+        <option value="sport">⚽ Спорт</option>
+        <option value="theatre">🎭 Театр</option>
+        <option value="festival">🎪 Фестиваль</option>
+        <option value="other">Другое</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Описание</label><textarea id="ev-description"></textarea></div>
+    <div class="form-group"><label>Цена (₽), 0 = бесплатно</label><input type="number" id="ev-price" min="0" /></div>
+    <div class="form-group"><label>Макс. участников</label><input type="number" id="ev-max" min="1" /></div>
+    <div class="form-error" id="ev-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="btn-ev-cancel">Отмена</button>
+      <button class="btn btn-primary" id="btn-ev-save">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка: пользователь -->
+<div class="modal-overlay" id="modal-user" style="display:none">
+  <div class="modal">
+    <h2>Новый пользователь</h2>
+    <div class="form-group"><label>Имя *</label><input type="text" id="u-name" /></div>
+    <div class="form-group"><label>Email *</label><input type="email" id="u-email" /></div>
+    <div class="form-group"><label>Возраст</label><input type="number" id="u-age" min="1" max="120" /></div>
+    <div class="form-group">
+      <label>Роль</label>
+      <select id="u-role"><option value="user">Пользователь</option><option value="admin">Администратор</option></select>
+    </div>
+    <div class="form-error" id="u-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="btn-u-cancel">Отмена</button>
+      <button class="btn btn-primary" id="btn-u-save">Создать</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  const session = getSession();
+  if (!session || session.role !== 'admin') {
+    alert('Доступ только для администраторов');
+    location.href = 'login.html';
+  }
+
+  const navUser = document.getElementById('nav-user');
+  if (navUser) {
+    navUser.style.display = 'flex';
+    navUser.querySelector('.nav-username').textContent = session.name;
+  }
+
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    clearSession(); location.href = 'index.html';
+  });
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = `toast show ${type}`;
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  // Вкладки
+  document.querySelectorAll('.admin-sidebar a').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelectorAll('.admin-sidebar a').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+      const tab = link.dataset.tab;
+      document.getElementById('tab-events').style.display = tab === 'events' ? 'block' : 'none';
+      document.getElementById('tab-users').style.display  = tab === 'users'  ? 'block' : 'none';
+      if (tab === 'users') loadUsers();
+    });
+  });
+
+  async function loadEvents() {
+    try {
+      const events = await eventsApi.getAll();
+      document.getElementById('stat-total').textContent    = events.length;
+      document.getElementById('stat-upcoming').textContent = events.filter(e => new Date(e.date) > new Date()).length;
+      document.getElementById('events-tbody').innerHTML = events.length ? events.map(ev => `
+        <tr>
+          <td style="font-weight:500">${ev.title}</td>
+          <td>${ev.city}</td>
+          <td>${new Date(ev.date).toLocaleString('ru-RU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          <td>${ev.category}</td>
+          <td>${ev.price != null ? ev.price + ' ₽' : '—'}</td>
+          <td>${ev.registrationCount || 0}${ev.maxParticipants ? '/' + ev.maxParticipants : ''}</td>
+        </tr>`).join('')
+        : '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text2)">Событий нет</td></tr>';
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  async function loadUsers() {
+    try {
+      const users = await usersApi.getAll();
+      document.getElementById('stat-users').textContent = users.length;
+      document.getElementById('users-tbody').innerHTML = users.length ? users.map(u => `
+        <tr>
+          <td style="font-weight:500">${u.name}</td>
+          <td style="color:var(--text2)">${u.email}</td>
+          <td>${u.age || '—'}</td>
+          <td><span class="badge badge-${u.role}">${u.role}</span></td>
+          <td style="color:var(--text2)">${new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
+        </tr>`).join('')
+        : '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text2)">Нет пользователей</td></tr>';
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  // Модалка события
+  document.getElementById('btn-add-event').addEventListener('click', () => {
+    document.getElementById('ev-error').textContent = '';
+    document.getElementById('modal-event').style.display = 'flex';
+  });
+  document.getElementById('btn-ev-cancel').addEventListener('click', () => {
+    document.getElementById('modal-event').style.display = 'none';
+  });
+  document.getElementById('btn-ev-save').addEventListener('click', async () => {
+    const errEl = document.getElementById('ev-error');
+    errEl.textContent = '';
+    const title = document.getElementById('ev-title').value.trim();
+    const city  = document.getElementById('ev-city').value.trim();
+    const date  = document.getElementById('ev-date').value;
+    if (!title || !city || !date) { errEl.textContent = 'Заполните: название, город, дата'; return; }
+    const priceVal = document.getElementById('ev-price').value;
+    const maxVal   = document.getElementById('ev-max').value;
+    const payload = {
+      title, city,
+      date: new Date(date).toISOString(),
+      category:    document.getElementById('ev-category').value,
+      location:    document.getElementById('ev-location').value.trim() || undefined,
+      description: document.getElementById('ev-description').value.trim() || undefined,
+      price:           priceVal !== '' ? Number(priceVal) : undefined,
+      maxParticipants: maxVal   !== '' ? Number(maxVal)   : undefined,
+    };
+    try {
+      await eventsApi.create(payload);
+      document.getElementById('modal-event').style.display = 'none';
+      showToast('Событие добавлено!');
+      ['ev-title','ev-city','ev-location','ev-date','ev-description','ev-price','ev-max'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      loadEvents();
+    } catch (err) { errEl.textContent = err.message; }
+  });
+
+  // Модалка пользователя
+  document.getElementById('btn-add-user').addEventListener('click', () => {
+    document.getElementById('u-error').textContent = '';
+    document.getElementById('modal-user').style.display = 'flex';
+  });
+  document.getElementById('btn-u-cancel').addEventListener('click', () => {
+    document.getElementById('modal-user').style.display = 'none';
+  });
+  document.getElementById('btn-u-save').addEventListener('click', async () => {
+    const errEl = document.getElementById('u-error');
+    errEl.textContent = '';
+    const name  = document.getElementById('u-name').value.trim();
+    const email = document.getElementById('u-email').value.trim();
+    const age   = document.getElementById('u-age').value;
+    const role  = document.getElementById('u-role').value;
+    if (!name || !email) { errEl.textContent = 'Имя и email обязательны'; return; }
+    try {
+      await usersApi.create({ name, email, role, ...(age ? { age: Number(age) } : {}) });
+      document.getElementById('modal-user').style.display = 'none';
+      showToast('Пользователь создан!');
+      loadUsers();
+    } catch (err) { errEl.textContent = err.message; }
+  });
+
+  // Закрытие модалок по клику вне
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.style.display = 'none'; });
+  });
+
+  loadEvents();
+</script>
+</body>
+</html>
