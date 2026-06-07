@@ -19,9 +19,29 @@ CityPulse — клиент-серверное веб-приложение для
 ## Функциональность
 
 **Для пользователя:**
-- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег� а- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег� а- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег� а- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег� а- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег- Рег- Рег- РеЅ�- Рег� а- Рег- Рег- Рег- РеЅ�in)- ---- Рег- Рег- Рег- Ре
-�********************************************************h
-# 1. Б# 1. Б# 1. Б# 1. Б# 1. Б# 1. Б# 1. Б# 1. Б# 1. Б# 1. Б# 1. Б# 1. Б# example .env
+- Регистрация и вход с проверкой пароля через bcrypt
+- Просмотр афиши событий с фильтрацией по городу и категории
+- Запись на события и отмена записи
+- Счётчик участников в реальном времени
+
+**Для администратора:**
+- Добавление новых событий через форму
+- Просмотр всех пользователей системы
+- Управление доступом по ролям (user / admin)
+
+---
+
+## Быстрый старт
+
+**Требования:** Node.js 18+, Docker
+
+\`\`\`bash
+# 1. База данных
+docker-compose up -d
+
+# 2. Бэкенд
+cd backend
+cp .env.example .env
 npm install
 nest start --watch
 
@@ -34,7 +54,33 @@ http://localhost:3000/index.html
 ## API
 
 \`\`\`
-GET    /users                  Все GEо�GET    /users                  В� /uGET    /users                  Вс��GET    /users                  Все GEо�GET    /users                  В� /uGET    /users                  Вс��GET    /users                  Все GEо�GET    /users                  В� /uGET    /users                  Вс��GET    /users                  Все GEо�GET    /users                  В� /uGET    /users                  Вс��GET    /users                  Все GEо�GET    /users                  В� /uGET    /users                  Вс��GET    /users                  Все GEо�GET    /users                  В� /uGET    /users                  Вс��GET    /users                  Все GE��GET    /users                  Все GEо�GET    /users (GET    /users                  Все GEо�GET    /users                  В� /uGET    /users    ��GET    /us��GET    /users  �и — \`user\` и \`admin\`. К�GET    /users             чер�GET  `RolesGuard\` + декоратор \`@Roles()\`. Роль передаётся в заголовке \`x-role\`.
+GET    /users                  Все пользователи (admin)
+GET    /users/:id              Пользователь по ID
+POST   /users                  Регистрация
+POST   /users/login            Вход в систему
+
+GET    /events                 Список событий (фильтр: city, category)
+GET    /events/:id             Событие по ID
+POST   /events                 Создать событие (admin)
+POST   /events/:id/register    Записаться на событие
+DELETE /events/:id/register    Отменить запись
+\`\`\`
+
+---
+
+## База данных
+
+3 таблицы: \`users\`, \`events\`, \`registrations\`
+
+Связи: users → registrations (1:N), events → registrations (1:N)
+
+Уникальный индекс (userId, eventId) — запрет повторной записи
+
+---
+
+## Управление доступом
+
+Две роли — \`user\` и \`admin\`. Контролируется через \`RolesGuard\` + декоратор \`@Roles()\`. Роль передаётся в заголовке \`x-role\`.
 
 ---
 
