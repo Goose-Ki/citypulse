@@ -1,129 +1,89 @@
-# CityPulse — Городской агрегатор событий
+# 🏙️ CityPulse — Городской агрегатор событий
 
-Клиент-серверное приложение: городская афиша с управлением доступом по ролям.
+CityPulse — клиент-серверное веб-приложение для просмотра городской афиши. Пользователь регистрируется, просматривает события по городу и категории, записывается на мероприятия. Администратор добавляет события и управляет пользователями через отдельную панель.
 
-## Стек
+---
 
-| Слой | Технологии |
-|------|-----------|
-| Бэкенд | NestJS, TypeScript, TypeORM |
-| База данных | PostgreSQL 16 |
-| Фронтенд | HTML, CSS, Vanilla JS (ES Modules) |
-| Хранение сессии | LocalStorage |
-| Контейнеризация | Docker, docker-compose |
-| Контроль версий | Git |
+## Стек технологий
 
-## Быстрый запуск
+**Backend** — NestJS (Node.js), PostgreSQL, TypeORM, bcrypt
 
-### 1. Запустить базу данных
+**Frontend** — HTML5, CSS3, Vanilla JavaScript (без фреймворков)
+
+**Хранение на клиенте** — LocalStorage (сессия, роль пользователя)
+
+**Инфраструктура** — Docker, docker-compose
+
+---
+
+## Функциональность
+
+**Для пользователя:**
+- Регистрация и вход с проверкой пароля через bcrypt
+- Просмотр афиши событий с фильтрацией по городу и категории
+- Запись на события и отмена записи
+- Счётчик участников в реальном времени
+
+**Для администратора:**
+- Добавление новых событий через форму
+- Просмотр всех пользователей системы
+- Управление доступом по ролям (user / admin)
+
+---
+
+## Быстрый старт
+
+**Требования:** Node.js 18+, Docker
 
 ```bash
+# 1. База данных
 docker-compose up -d
-```
 
-PostgreSQL доступен на `localhost:5432`  
-pgAdmin (веб-интерфейс БД): http://localhost:5050  
-Логин pgAdmin: `admin@admin.com` / `admin`
-
-### 2. Настроить бэкенд
-
-```bash
+# 2. Бэкенд
 cd backend
-cp .env.example .env   # скопировать конфигурацию
+cp .env.example .env
 npm install
-npm run start:dev      # запуск в режиме разработки
-```
+nest start --watch
 
-Сервер: http://localhost:3000
-
-### 3. Запустить фронтенд
-
-```bash
-cd frontend
-npx serve .            # или любой статический HTTP-сервер
-# python3 -m http.server 8080
-```
-
-Фронтенд: http://localhost:8080
-
----
-
-## API Endpoints
-
-### Пользователи
-| Метод | Путь | Доступ | Описание |
-|-------|------|--------|----------|
-| GET | /users | все | Список пользователей |
-| GET | /users/:id | все | Пользователь по ID |
-| POST | /users | admin | Создать пользователя |
-
-### События
-| Метод | Путь | Доступ | Описание |
-|-------|------|--------|----------|
-| GET | /events | все | Список событий (фильтр: city, category) |
-| GET | /events/:id | все | Событие по ID |
-| POST | /events | admin | Создать событие |
-| POST | /events/:id/register | user, admin | Записаться на событие |
-| DELETE | /events/:id/register | user, admin | Отменить регистрацию |
-
-### Заголовки авторизации
-```
-x-role: admin      # для защищённых маршрутов
-x-user-id: <uuid>  # для маршрутов регистрации на событие
+# 3. Открыть сайт
+http://localhost:3000/index.html
 ```
 
 ---
 
-## Структура проекта
+## API
 
 ```
-city-events/
-├── backend/
-│   └── src/
-│       ├── users/          # Модуль пользователей
-│       │   ├── user.entity.ts
-│       │   ├── users.controller.ts
-│       │   ├── users.service.ts
-│       │   ├── users.module.ts
-│       │   └── dto/create-user.dto.ts
-│       ├── events/         # Модуль событий
-│       │   ├── event.entity.ts
-│       │   ├── registration.entity.ts
-│       │   ├── events.controller.ts
-│       │   ├── events.service.ts
-│       │   ├── events.module.ts
-│       │   └── dto/create-event.dto.ts
-│       ├── auth/           # Авторизация
-│       │   ├── roles.guard.ts
-│       │   └── roles.decorator.ts
-│       ├── app.module.ts
-│       └── main.ts
-├── frontend/
-│   ├── index.html          # Публичная афиша
-│   ├── login.html          # Вход / регистрация
-│   ├── admin.html          # Панель администратора
-│   ├── css/style.css
-│   └── js/
-│       ├── api.js          # HTTP-клиент (fetch)
-│       └── auth.js         # Управление сессией (LocalStorage)
-└── docker-compose.yml
+GET    /users                  Все пользователи (admin)
+GET    /users/:id              Пользователь по ID
+POST   /users                  Регистрация
+POST   /users/login            Вход в систему
+
+GET    /events                 Список событий (фильтр: city, category)
+GET    /events/:id             Событие по ID
+POST   /events                 Создать событие (admin)
+POST   /events/:id/register    Записаться на событие
+DELETE /events/:id/register    Отменить запись
 ```
 
-## Создание первого администратора
+---
 
-После первого запуска создайте пользователя через API:
+## База данных
 
-```bash
-curl -X POST http://localhost:3000/users \
-  -H "Content-Type: application/json" \
-  -H "x-role: admin" \
-  -d '{"name":"Администратор","email":"admin@city.ru","role":"admin"}'
-```
+3 таблицы: `users`, `events`, `registrations`
 
-Войдите на http://localhost:8080/login.html с email `admin@city.ru`.
+Связи: users → registrations (1:N), events → registrations (1:N)
 
-## Схема базы данных
+Уникальный индекс (userId, eventId) — запрет повторной записи
 
-- **users** — пользователи (id, name, email, age, role, createdAt)
-- **events** — события (id, title, description, location, date, city, category, price, maxParticipants, createdAt)
-- **registrations** — связь пользователь↔событие (id, userId, eventId, registeredAt)
+---
+
+## Управление доступом
+
+Две роли — `user` и `admin`. Контролируется через `RolesGuard` + декоратор `@Roles()`. Роль передаётся в заголовке `x-role`.
+
+---
+
+## 👤 Автор
+
+**Гусев Дмитрий**, БИВТ-24-3, МИСИС, 2026
